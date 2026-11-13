@@ -6,7 +6,7 @@ public class WorldManager : MonoBehaviour
     [Header("References")]
     public Transform player;
     public GroundTile[] tilePrefabs;
-    public GameObject[] obstaclePrefabs;   // Haybale, Fence, Beam
+    public GameObject[] obstaclePrefabs;
     public GameObject eggPrefab, goldEggPrefab;
 
     [Header("Settings")]
@@ -65,10 +65,9 @@ public class WorldManager : MonoBehaviour
 
             if (Random.value < doubleObstacleChance)
             {
-                // second obstacle in another lane, the third lane stays free for eggs
                 int lane2 = OtherLane(lane);
                 Spawn(RandomObstacle(), lane2, oz, t.items);
-                eggLane = -(lane + lane2);   // lanes are -1, 0, 1 so the free one is -(a+b)
+                eggLane = -(lane + lane2);   // the free lane
             }
             else
             {
