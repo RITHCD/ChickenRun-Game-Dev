@@ -2120,9 +2120,10 @@ GameObject:
   - component: {fileID: 54186851546604756}
   - component: {fileID: 136373561480327732}
   - component: {fileID: 723265912}
+  - component: {fileID: 1982736450}
   m_Layer: 0
   m_Name: ChickenPlayer
-  m_TagString: Chicken
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2185,14 +2186,14 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 1
+  m_Radius: 0.45
+  m_Height: 1.2
   m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: 0.6, z: 0}
 --- !u!114 &723265912
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2200,7 +2201,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9213206596740143696}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e7e021d804bceb74489e88b15f242c7c, type: 3}
   m_Name: 
@@ -2211,6 +2212,42 @@ MonoBehaviour:
   RearLegR: {fileID: 0}
   moveAngle: 90
   movSpeed: 1
+--- !u!114 &1982736450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9213206596740143696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05a6f7a56bec4bae8f6d756ed4dcfdd8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 12
+  maxSpeed: 30
+  accel: 0.25
+  laneDistance: 2
+  laneChangeSpeed: 15
+  canJump: 1
+  jumpForce: 8
+  gravity: 25
+  canCrouch: 1
+  crouchDuration: 0.8
+  crouchColliderHeight: 0.5
+  crouchColliderCenter: {x: 0, y: 0.25, z: 0}
+  crouchScaleY: 0.5
+  modelTransform: {fileID: 0}
+  isCrouching: 0
+  followCamera: 1
+  cameraOffset: {x: 0, y: 3.6, z: -6.5}
+  leftLeg: {fileID: 0}
+  rightLeg: {fileID: 0}
+  legSwingSpeed: 14
+  legSwingAngle: 30
+  score: 0
+  isDead: 0
+  stopOnHit: 1
 --- !u!1 &9213206596849299574
 GameObject:
   m_ObjectHideFlags: 0
