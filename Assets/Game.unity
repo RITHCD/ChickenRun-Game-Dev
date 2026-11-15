@@ -432,7 +432,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &842251014
+--- !u!1 &1556552958
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -440,8 +440,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 842251016}
-  - component: {fileID: 842251015}
+  - component: {fileID: 1556552960}
+  - component: {fileID: 1556552959}
   m_Layer: 0
   m_Name: World
   m_TagString: Untagged
@@ -449,13 +449,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &842251015
+--- !u!114 &1556552959
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 842251014}
+  m_GameObject: {fileID: 1556552958}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 61a3caa832dfa1549ac6179bf0db490e, type: 3}
@@ -481,13 +481,13 @@ MonoBehaviour:
   obstacleChance: 0.7
   doubleObstacleChance: 0.25
   goldChance: 0.12
---- !u!4 &842251016
+--- !u!4 &1556552960
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 842251014}
+  m_GameObject: {fileID: 1556552958}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -662,4 +662,4 @@ SceneRoots:
   - {fileID: 410087041}
   - {fileID: 832575519}
   - {fileID: 1862210114}
-  - {fileID: 842251016}
+  - {fileID: 1556552960}
