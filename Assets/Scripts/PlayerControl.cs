@@ -44,6 +44,10 @@ public class PlayerControl : MonoBehaviour
     private Vector3 originalModelScale;
     private Vector3 originalModelPos;
 
+    void OnEnable() { FoxChase.Caught += OnFoxCaught; }
+    void OnDisable() { FoxChase.Caught -= OnFoxCaught; }
+    void OnFoxCaught() { isGameOver = true; speed = 0f; }
+
     void Start()
     {
         // Connect to WorldManager so endless tiles keep spawning
@@ -410,15 +414,11 @@ public class PlayerControl : MonoBehaviour
                 return;
             }
 
-            Debug.Log("Hit obstacle: " + other.name);
-            isGameOver = true;
-            speed = 0f;
+            HitObstacle(obstacle, other.gameObject);
         }
         else if (other.CompareTag("Obstacle"))
         {
-            Debug.Log("Hit obstacle: " + other.name);
-            isGameOver = true;
-            speed = 0f;
+            HitObstacle(obstacle, other.gameObject);
         }
     }
 
@@ -434,13 +434,37 @@ public class PlayerControl : MonoBehaviour
                 return;
             }
 
-            Debug.Log("Hit obstacle: " + collision.gameObject.name);
-            isGameOver = true;
-            speed = 0f;
+            HitObstacle(obstacle, collision.gameObject);
         }
         else if (collision.gameObject.CompareTag("Obstacle"))
         {
-            Debug.Log("Hit obstacle: " + collision.gameObject.name);
+            HitObstacle(obstacle, collision.gameObject);
+        }
+    }
+
+    // Called for every obstacle hit. 1st hit: the fox chases. 2nd hit: the fox catches the chicken.
+    void HitObstacle(Obstacle obstacle, GameObject hitObj)
+    {
+        // Jumped over a Low obstacle: no hit
+        if (obstacle != null && obstacle.type == Obstacle.Type.Low && transform.position.y > 0.8f)
+        {
+            return;
+        }
+
+        Debug.Log("Hit obstacle: " + hitObj.name);
+
+        // Remove the obstacle so one hit is counted once
+        if (obstacle != null)
+        {
+            Destroy(obstacle.gameObject);
+        }
+
+        if (FoxChase.I != null)
+        {
+            FoxChase.I.Hit();
+        }
+        else
+        {
             isGameOver = true;
             speed = 0f;
         }
