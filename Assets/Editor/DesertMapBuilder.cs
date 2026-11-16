@@ -276,7 +276,7 @@ public static class DesertMapBuilder
         var oldWorld = GameObject.Find("World");
         if (oldWorld != null) Object.DestroyImmediate(oldWorld);
 
-        var player = GameObject.Find("Player");
+        var player = GameObject.FindWithTag("Player");
         if (player == null)
         {
             player = GameObject.CreatePrimitive(PrimitiveType.Cube);

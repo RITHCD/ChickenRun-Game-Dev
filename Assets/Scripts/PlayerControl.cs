@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class PlayerControl : MonoBehaviour
 {
     [Header("Player Movement")]
-    public float speed = 12f;
-    public float maxSpeed = 30f;
-    public float accel = 0.25f;
+    public float speed = 12f;          // fallback only, GameManager's speed is used when present
+    public float maxSpeed = 30f;       // unused when GameManager exists
+    public float accel = 0.25f;        // unused when GameManager exists
     public float laneDistance = 2f;
     public float jumpForce = 8f;
     public float gravity = 25f;
@@ -19,14 +21,24 @@ public class PlayerControl : MonoBehaviour
     public Vector3 cameraOffset = new Vector3(0f, 3.6f, -6.5f);
 
     [Header("Game Score")]
-    public int score = 0;
+    public int score = 0;              // fallback only
     public bool isGameOver = false;
+
+    [Header("UI Panels")]
+    public GameObject startPanel;
+    public GameObject pausePanel;
+    public bool isGameStarted = false;
+    public bool isPaused = false;
+
+    [Header("Hit Handling")]
+    public float hitCooldown = 0.5f;
 
     private int lane = 0;
     private float yVelocity = 0f;
     private bool isGrounded = true;
     private bool isCrouching = false;
     private float crouchTimer = 0f;
+    private float lastHitTime = -999f;
 
     private CapsuleCollider col;
     private float originalHeight;
@@ -35,6 +47,10 @@ public class PlayerControl : MonoBehaviour
     private Transform chickenModel;
     private Vector3 originalModelScale;
     private Vector3 originalModelPos;
+
+    void OnEnable() { FoxChase.Caught += OnFoxCaught; }
+    void OnDisable() { FoxChase.Caught -= OnFoxCaught; }
+    void OnFoxCaught() { isGameOver = true; speed = 0f; }
 
     void Start()
     {
@@ -75,24 +91,209 @@ public class PlayerControl : MonoBehaviour
             originalModelScale = chickenModel.localScale;
             originalModelPos = chickenModel.localPosition;
         }
+
+        // Ensure Canvas has camera assigned
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if (canvas != null && canvas.worldCamera == null)
+        {
+            canvas.worldCamera = Camera.main;
+        }
+
+        // Setup Start panel
+        if (startPanel == null)
+        {
+            if (canvas != null)
+            {
+                Transform startT = canvas.transform.Find("StartPanel");
+                if (startT != null)
+                {
+                    startPanel = startT.gameObject;
+                }
+            }
+            if (startPanel == null)
+            {
+                startPanel = GameObject.Find("StartPanel");
+            }
+            if (startPanel == null)
+            {
+                startPanel = GameObject.Find("StartPanel(Clone)");
+            }
+            if (startPanel == null && canvas != null)
+            {
+                for (int i = 0; i < canvas.transform.childCount; i++)
+                {
+                    Transform child = canvas.transform.GetChild(i);
+                    if (child.name.ToLower().Contains("start"))
+                    {
+                        startPanel = child.gameObject;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (startPanel != null)
+        {
+            // Show start panel when first entering game
+            startPanel.SetActive(true);
+            isGameStarted = false;
+
+            // Connect Play button to StartGame()
+            Button playBtn = startPanel.GetComponentInChildren<Button>();
+            if (playBtn != null)
+            {
+                playBtn.onClick.AddListener(StartGame);
+            }
+        }
+        else
+        {
+            // If no start panel in scene, start playing immediately
+            isGameStarted = true;
+            if (GameManager.I != null && !GameManager.I.IsPlaying)
+            {
+                GameManager.I.StartGame();
+            }
+        }
+
+        // Setup Pause panel
+        if (pausePanel == null)
+        {
+            if (canvas != null)
+            {
+                Transform pauseT = canvas.transform.Find("Pause_Panel");
+                if (pauseT != null)
+                {
+                    pausePanel = pauseT.gameObject;
+                }
+            }
+            if (pausePanel == null)
+            {
+                pausePanel = GameObject.Find("Pause_Panel");
+            }
+            if (pausePanel == null && canvas != null)
+            {
+                for (int i = 0; i < canvas.transform.childCount; i++)
+                {
+                    Transform child = canvas.transform.GetChild(i);
+                    if (child.name.ToLower().Contains("pause"))
+                    {
+                        pausePanel = child.gameObject;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Hook up Resume and Restart buttons on Pause panel
+        if (pausePanel != null)
+        {
+            Button[] buttons = pausePanel.GetComponentsInChildren<Button>(true);
+            foreach (Button btn in buttons)
+            {
+                string btnName = btn.gameObject.name.ToLower();
+                if (btnName.Contains("resume"))
+                {
+                    btn.onClick.AddListener(ResumeGame);
+                }
+                else if (btnName.Contains("restart"))
+                {
+                    btn.onClick.AddListener(RestartGame);
+                }
+            }
+            pausePanel.SetActive(false);
+        }
+    }
+
+    public void StartGame()
+    {
+        if (GameManager.I != null) GameManager.I.StartGame();
+
+        isGameStarted = true;
+        if (startPanel != null)
+        {
+            startPanel.SetActive(false);
+        }
+    }
+
+    public void PauseGame()
+    {
+        if (GameManager.I != null) GameManager.I.Pause();
+
+        isPaused = true;
+        Time.timeScale = 0f;
+        if (pausePanel != null)
+        {
+            pausePanel.SetActive(true);
+        }
+    }
+
+    public void ResumeGame()
+    {
+        if (GameManager.I != null) GameManager.I.Resume();
+
+        isPaused = false;
+        Time.timeScale = 1f;
+        if (pausePanel != null)
+        {
+            pausePanel.SetActive(false);
+        }
+    }
+
+    public void RestartGame()
+    {
+        if (GameManager.I != null)
+        {
+            // GameManager.Restart() reloads the scene itself
+            GameManager.I.Restart();
+            return;
+        }
+
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    void OnDestroy()
+    {
+        Time.timeScale = 1f;
     }
 
     void Update()
     {
-        // Stop moving if game is over
-        if (isGameOver)
+        // Sync game over from GameManager
+        if (GameManager.I != null && GameManager.I.State == GameState.GameOver) isGameOver = true;
+
+        var keyboard = Keyboard.current;
+
+        // Toggle Pause with Escape key
+        if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+        {
+            if (isGameStarted && !isGameOver)
+            {
+                if (isPaused)
+                {
+                    ResumeGame();
+                }
+                else
+                {
+                    PauseGame();
+                }
+            }
+        }
+
+        // R restarts after game over
+        if (isGameOver && keyboard != null && keyboard.rKey.wasPressedThisFrame)
+        {
+            RestartGame();
+            return;
+        }
+
+        // Wait until player clicks Play, and stop moving if paused or game over
+        if (!isGameStarted || isPaused || isGameOver)
         {
             return;
         }
 
-        // Increase speed slowly over time
-        if (speed < maxSpeed)
-        {
-            speed += accel * Time.deltaTime;
-        }
-
         // Handle keyboard input
-        var keyboard = Keyboard.current;
         if (keyboard != null)
         {
             // Move left
@@ -156,7 +357,9 @@ public class PlayerControl : MonoBehaviour
             if (col != null)
             {
                 col.height = crouchHeight;
-                col.center = new Vector3(0f, crouchHeight * 0.5f, 0f);
+                col.center = new Vector3(originalCenter.x,
+                    originalCenter.y - (originalHeight - crouchHeight) * 0.5f,
+                    originalCenter.z);
             }
 
             if (chickenModel != null)
@@ -185,7 +388,10 @@ public class PlayerControl : MonoBehaviour
         // Move player forward and change lanes
         Vector3 pos = transform.position;
         pos.x = Mathf.Lerp(pos.x, lane * laneDistance, 12f * Time.deltaTime);
-        pos.z += speed * Time.deltaTime;
+
+        // Speed comes from GameManager / SpeedController
+        float s = GameManager.I != null ? GameManager.I.Speed : speed;
+        pos.z += s * Time.deltaTime;
 
         // Apply jumping and gravity
         if (!isGrounded)
@@ -217,18 +423,27 @@ public class PlayerControl : MonoBehaviour
         }
     }
 
+    // CompareTag throws if the tag doesn't exist, so wrap it
+    static bool HasTag(GameObject go, string tag)
+    {
+        try { return go.CompareTag(tag); }
+        catch { return false; }
+    }
+
     // Trigger detection for eggs and obstacles
     void OnTriggerEnter(Collider other)
     {
+        if (isGameOver) return;
+
         // Collect white egg (+1 score)
-        if (other.CompareTag("Egg") || other.name.Contains("Egg"))
+        if (HasTag(other.gameObject, "Egg") || other.name.Contains("Egg"))
         {
-            score++;
+            if (GameManager.I != null) GameManager.I.AddEgg(); else score++;
             Destroy(other.gameObject);
             return;
         }
 
-        // Hit obstacle -> stop the game
+        // Hit obstacle
         Obstacle obstacle = other.GetComponentInParent<Obstacle>();
         if (obstacle != null)
         {
@@ -238,21 +453,19 @@ public class PlayerControl : MonoBehaviour
                 return;
             }
 
-            Debug.Log("Hit obstacle: " + other.name);
-            isGameOver = true;
-            speed = 0f;
+            HitObstacle(obstacle, other.gameObject);
         }
-        else if (other.CompareTag("Obstacle"))
+        else if (HasTag(other.gameObject, "Obstacle"))
         {
-            Debug.Log("Hit obstacle: " + other.name);
-            isGameOver = true;
-            speed = 0f;
+            HitObstacle(obstacle, other.gameObject);
         }
     }
 
     // Physical collision detection
     void OnCollisionEnter(Collision collision)
     {
+        if (isGameOver) return;
+
         Obstacle obstacle = collision.gameObject.GetComponentInParent<Obstacle>();
         if (obstacle != null)
         {
@@ -262,13 +475,45 @@ public class PlayerControl : MonoBehaviour
                 return;
             }
 
-            Debug.Log("Hit obstacle: " + collision.gameObject.name);
-            isGameOver = true;
-            speed = 0f;
+            HitObstacle(obstacle, collision.gameObject);
         }
-        else if (collision.gameObject.CompareTag("Obstacle"))
+        else if (HasTag(collision.gameObject, "Obstacle"))
         {
-            Debug.Log("Hit obstacle: " + collision.gameObject.name);
+            HitObstacle(obstacle, collision.gameObject);
+        }
+    }
+
+    // Called for every obstacle hit. 1st hit: the fox chases. 2nd hit: the fox catches the chicken.
+    void HitObstacle(Obstacle obstacle, GameObject hitObj)
+    {
+        // Jumped over a Low obstacle: no hit
+        if (obstacle != null && obstacle.type == Obstacle.Type.Low && transform.position.y > 0.8f)
+        {
+            return;
+        }
+
+        // Ignore duplicate contacts (trigger + collision, or several colliders on one obstacle)
+        if (Time.time - lastHitTime < hitCooldown) return;
+        lastHitTime = Time.time;
+
+        Debug.Log("Hit obstacle: " + hitObj.name);
+
+        // Remove the obstacle so one hit is counted once
+        if (obstacle != null)
+        {
+            Destroy(obstacle.gameObject);
+        }
+
+        if (GameManager.I != null)
+        {
+            GameManager.I.Hit();
+        }
+        else if (FoxChase.I != null)
+        {
+            FoxChase.I.Hit();
+        }
+        else
+        {
             isGameOver = true;
             speed = 0f;
         }

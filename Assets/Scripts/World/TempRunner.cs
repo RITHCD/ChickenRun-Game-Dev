@@ -34,7 +34,14 @@ public class TempRunner : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Egg") || other.CompareTag("Gold")) Destroy(other.gameObject);
-        else if (other.GetComponent<Obstacle>() != null) Debug.Log("Hit obstacle: " + other.name);
+        if (other.CompareTag("Egg") || other.CompareTag("Gold"))
+        {
+            Destroy(other.gameObject);
+        }
+        else if (other.GetComponent<Obstacle>() != null)
+        {
+            Destroy(other.gameObject);
+            if (FoxChase.I != null) FoxChase.I.Hit();   // the fox starts chasing
+        }
     }
 }
