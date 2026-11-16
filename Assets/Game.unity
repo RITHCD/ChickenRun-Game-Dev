@@ -432,70 +432,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1282616114
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1282616116}
-  - component: {fileID: 1282616115}
-  m_Layer: 0
-  m_Name: World
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1282616115
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1282616114}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 61a3caa832dfa1549ac6179bf0db490e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WorldManager
-  player: {fileID: 0}
-  tilePrefabs:
-  - {fileID: 5698847104306512476, guid: 388e47b5577aa0b43b8a28d9c223e884, type: 3}
-  - {fileID: 8351739331905786522, guid: 9be28519fc9769c46a68c9d94ec80d7c, type: 3}
-  - {fileID: 917681515738792873, guid: db0389fb1eb2877469059a1b26fb298c, type: 3}
-  obstaclePrefabs:
-  - {fileID: 8002198995695401770, guid: b3c1a874301b0d9439c950e5e23ac3bf, type: 3}
-  - {fileID: 2155459443541948777, guid: d70ff6ca0c2a9b54a8420b0cfe79b1ce, type: 3}
-  - {fileID: 3315638138335246974, guid: cc2b1350ad2975b4bb2588d3a2f08f14, type: 3}
-  - {fileID: 209865018073571900, guid: 7fe39ac917c3a3446bc1e4755c452423, type: 3}
-  - {fileID: 3371102282391858558, guid: 0ceba9ed661626f4bb6ac760432049dc, type: 3}
-  eggPrefab: {fileID: 8958924902672740754, guid: d9021fa4895a2884b89daf5f057a9cc2, type: 3}
-  goldEggPrefab: {fileID: 4437409489431674859, guid: a99284819f1d76f428ba3f1f5c85083a, type: 3}
-  tileCount: 8
-  tileLength: 24
-  laneDistance: 2
-  emptyStartTiles: 2
-  obstacleChance: 0.7
-  doubleObstacleChance: 0.25
-  goldChance: 0.12
---- !u!4 &1282616116
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1282616114}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1654700484
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -553,6 +489,134 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4e57805b8d0341e196deb819428be950, type: 3}
+--- !u!1 &1705892170
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1705892172}
+  - component: {fileID: 1705892171}
+  m_Layer: 0
+  m_Name: FoxChase
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1705892171
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1705892170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b9316dba6f72a3468a0e2caf5d691d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FoxChase
+  player: {fileID: 0}
+  foxPrefab: {fileID: 0}
+  chaseGap: 3
+  hiddenGap: 8
+  closeSpeed: 20
+  forgiveTime: 10
+  hitCooldown: 1
+  sideSpeed: 8
+  stopTimeOnCatch: 1
+  onFirstHit:
+    m_PersistentCalls:
+      m_Calls: []
+  onCaught:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!4 &1705892172
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1705892170}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 7.11394, y: 0, z: 11.2416}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &1743164473 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 9213206596740143703, guid: 4e57805b8d0341e196deb819428be950, type: 3}
+  m_PrefabInstance: {fileID: 1654700484}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2014729341
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2014729343}
+  - component: {fileID: 2014729342}
+  m_Layer: 0
+  m_Name: World
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2014729342
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2014729341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61a3caa832dfa1549ac6179bf0db490e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WorldManager
+  player: {fileID: 1743164473}
+  tilePrefabs:
+  - {fileID: 5698847104306512476, guid: 388e47b5577aa0b43b8a28d9c223e884, type: 3}
+  - {fileID: 8351739331905786522, guid: 9be28519fc9769c46a68c9d94ec80d7c, type: 3}
+  - {fileID: 917681515738792873, guid: db0389fb1eb2877469059a1b26fb298c, type: 3}
+  obstaclePrefabs:
+  - {fileID: 8002198995695401770, guid: b3c1a874301b0d9439c950e5e23ac3bf, type: 3}
+  - {fileID: 2155459443541948777, guid: d70ff6ca0c2a9b54a8420b0cfe79b1ce, type: 3}
+  - {fileID: 3315638138335246974, guid: cc2b1350ad2975b4bb2588d3a2f08f14, type: 3}
+  - {fileID: 209865018073571900, guid: 7fe39ac917c3a3446bc1e4755c452423, type: 3}
+  - {fileID: 3371102282391858558, guid: 0ceba9ed661626f4bb6ac760432049dc, type: 3}
+  eggPrefab: {fileID: 8958924902672740754, guid: d9021fa4895a2884b89daf5f057a9cc2, type: 3}
+  goldEggPrefab: {fileID: 4437409489431674859, guid: a99284819f1d76f428ba3f1f5c85083a, type: 3}
+  tileCount: 8
+  tileLength: 24
+  laneDistance: 2
+  emptyStartTiles: 2
+  obstacleChance: 0.7
+  doubleObstacleChance: 0.25
+  goldChance: 0.12
+--- !u!4 &2014729343
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2014729341}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -560,5 +624,6 @@ SceneRoots:
   - {fileID: 330585546}
   - {fileID: 410087041}
   - {fileID: 832575519}
-  - {fileID: 1282616116}
   - {fileID: 1654700484}
+  - {fileID: 2014729343}
+  - {fileID: 1705892172}

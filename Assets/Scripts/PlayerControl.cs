@@ -53,6 +53,10 @@ public class PlayerControl : MonoBehaviour
     private Vector3 originalModelScale = Vector3.one;
     private Vector3 originalModelPosition = Vector3.zero;
 
+    void OnEnable() { FoxChase.Caught += OnFoxCaught; }
+    void OnDisable() { FoxChase.Caught -= OnFoxCaught; }
+    void OnFoxCaught() { isDead = true; speed = 0f; }
+
     void Start()
     {
         // Auto-connect to WorldManager if player reference is missing
@@ -317,12 +321,27 @@ public class PlayerControl : MonoBehaviour
 
         if (isObstacle)
         {
+            // Jumped over a Low obstacle, or slid under a High one: no hit
+            if (obstacle != null)
+            {
+                bool cleared = (obstacle.type == Obstacle.Type.Low && transform.position.y > 0.8f) ||
+                               (obstacle.type == Obstacle.Type.High && isCrouching);
+                if (cleared) return;
+            }
+
             string obsName = obstacle != null ? obstacle.gameObject.name : hitObj.name;
             string obsType = obstacle != null ? obstacle.type.ToString() : "General";
 
             Debug.Log($"[ChickenPlayer] HIT OBSTACLE! Touched: {obsName} (Type: {obsType})");
 
-            if (stopOnHit)
+            // Remove the obstacle so one hit is counted once
+            if (obstacle != null) Destroy(obstacle.gameObject);
+
+            if (FoxChase.I != null)
+            {
+                FoxChase.I.Hit();   // 1st hit: fox chases. 2nd hit: fox catches the chicken
+            }
+            else if (stopOnHit)
             {
                 isDead = true;
                 speed = 0f;
