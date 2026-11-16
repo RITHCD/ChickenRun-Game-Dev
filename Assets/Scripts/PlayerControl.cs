@@ -10,8 +10,8 @@ public class PlayerControl : MonoBehaviour
     public float maxSpeed = 30f;
     public float accel = 0.25f;
     public float laneDistance = 2f;
-    public float jumpForce = 8f;
-    public float gravity = 25f;
+    public float jumpForce = 9.5f;
+    public float gravity = 22f;
 
     [Header("Crouch Settings")]
     public float crouchDuration = 0.8f;
@@ -404,8 +404,14 @@ public class PlayerControl : MonoBehaviour
         Obstacle obstacle = other.GetComponentInParent<Obstacle>();
         if (obstacle != null)
         {
-            // Duck under high beam when crouching
-            if (obstacle.type == Obstacle.Type.High && isCrouching)
+            // Duck under high beam or bench when crouching on the ground (cannot jump over high beam)
+            if (isCrouching && (isGrounded || transform.position.y < 0.25f) && (obstacle.type == Obstacle.Type.High || obstacle.gameObject.name.ToLower().Contains("bench") || obstacle.gameObject.name.ToLower().Contains("beam")))
+            {
+                return;
+            }
+
+            // Jump over low obstacles (like rocks, fence, haybale, bench) when in the air
+            if (obstacle.type == Obstacle.Type.Low && !isGrounded && transform.position.y > 0.35f)
             {
                 return;
             }
@@ -414,8 +420,20 @@ public class PlayerControl : MonoBehaviour
             isGameOver = true;
             speed = 0f;
         }
-        else if (other.CompareTag("Obstacle"))
+        else if (other.CompareTag("Obstacle") || other.name.ToLower().Contains("obstacle") || other.name.ToLower().Contains("haybale") || other.name.ToLower().Contains("fence") || other.name.ToLower().Contains("rock") || other.name.ToLower().Contains("bench") || other.name.ToLower().Contains("beam"))
         {
+            // Duck under beam / bench when crouching on the ground
+            if (isCrouching && (isGrounded || transform.position.y < 0.25f) && (other.name.ToLower().Contains("beam") || other.name.ToLower().Contains("bench")))
+            {
+                return;
+            }
+
+            // Jump over low obstacles when in the air (cannot jump over beam)
+            if (!isGrounded && transform.position.y > 0.35f && !other.name.ToLower().Contains("beam"))
+            {
+                return;
+            }
+
             Debug.Log("Hit obstacle: " + other.name);
             isGameOver = true;
             speed = 0f;
@@ -428,8 +446,14 @@ public class PlayerControl : MonoBehaviour
         Obstacle obstacle = collision.gameObject.GetComponentInParent<Obstacle>();
         if (obstacle != null)
         {
-            // Duck under high beam when crouching
-            if (obstacle.type == Obstacle.Type.High && isCrouching)
+            // Duck under high beam or bench when crouching on the ground (cannot jump over high beam)
+            if (isCrouching && (isGrounded || transform.position.y < 0.25f) && (obstacle.type == Obstacle.Type.High || obstacle.gameObject.name.ToLower().Contains("bench") || obstacle.gameObject.name.ToLower().Contains("beam")))
+            {
+                return;
+            }
+
+            // Jump over low obstacles (like rocks, fence, haybale, bench) when in the air
+            if (obstacle.type == Obstacle.Type.Low && !isGrounded && transform.position.y > 0.35f)
             {
                 return;
             }
@@ -438,8 +462,20 @@ public class PlayerControl : MonoBehaviour
             isGameOver = true;
             speed = 0f;
         }
-        else if (collision.gameObject.CompareTag("Obstacle"))
+        else if (collision.gameObject.CompareTag("Obstacle") || collision.gameObject.name.ToLower().Contains("obstacle") || collision.gameObject.name.ToLower().Contains("haybale") || collision.gameObject.name.ToLower().Contains("fence") || collision.gameObject.name.ToLower().Contains("rock") || collision.gameObject.name.ToLower().Contains("bench") || collision.gameObject.name.ToLower().Contains("beam"))
         {
+            // Duck under beam / bench when crouching on the ground
+            if (isCrouching && (isGrounded || transform.position.y < 0.25f) && (collision.gameObject.name.ToLower().Contains("beam") || collision.gameObject.name.ToLower().Contains("bench")))
+            {
+                return;
+            }
+
+            // Jump over low obstacles when in the air (cannot jump over beam)
+            if (!isGrounded && transform.position.y > 0.35f && !collision.gameObject.name.ToLower().Contains("beam"))
+            {
+                return;
+            }
+
             Debug.Log("Hit obstacle: " + collision.gameObject.name);
             isGameOver = true;
             speed = 0f;

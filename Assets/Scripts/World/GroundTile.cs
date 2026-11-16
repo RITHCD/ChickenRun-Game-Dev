@@ -6,6 +6,7 @@ public class GroundTile : MonoBehaviour
 
     public void ClearItems()
     {
+        if (items == null) return;
         for (int i = items.childCount - 1; i >= 0; i--)
             Destroy(items.GetChild(i).gameObject);
     }
