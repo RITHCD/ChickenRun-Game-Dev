@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class PlayerControl : MonoBehaviour
 {
@@ -21,6 +23,12 @@ public class PlayerControl : MonoBehaviour
     [Header("Game Score")]
     public int score = 0;
     public bool isGameOver = false;
+
+    [Header("UI Panels")]
+    public GameObject startPanel;
+    public GameObject pausePanel;
+    public bool isGameStarted = false;
+    public bool isPaused = false;
 
     private int lane = 0;
     private float yVelocity = 0f;
@@ -75,12 +83,177 @@ public class PlayerControl : MonoBehaviour
             originalModelScale = chickenModel.localScale;
             originalModelPos = chickenModel.localPosition;
         }
+
+        // Ensure Canvas has camera assigned
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if (canvas != null && canvas.worldCamera == null)
+        {
+            canvas.worldCamera = Camera.main;
+        }
+
+        // Setup Start panel
+        if (startPanel == null)
+        {
+            if (canvas != null)
+            {
+                Transform startT = canvas.transform.Find("StartPanel");
+                if (startT != null)
+                {
+                    startPanel = startT.gameObject;
+                }
+            }
+            if (startPanel == null)
+            {
+                startPanel = GameObject.Find("StartPanel");
+            }
+            if (startPanel == null)
+            {
+                startPanel = GameObject.Find("StartPanel(Clone)");
+            }
+            if (startPanel == null && canvas != null)
+            {
+                for (int i = 0; i < canvas.transform.childCount; i++)
+                {
+                    Transform child = canvas.transform.GetChild(i);
+                    if (child.name.ToLower().Contains("start"))
+                    {
+                        startPanel = child.gameObject;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (startPanel != null)
+        {
+            // Show start panel when first entering game
+            startPanel.SetActive(true);
+            isGameStarted = false;
+
+            // Connect Play button to StartGame()
+            Button playBtn = startPanel.GetComponentInChildren<Button>();
+            if (playBtn != null)
+            {
+                playBtn.onClick.AddListener(StartGame);
+            }
+        }
+        else
+        {
+            // If no start panel in scene, start playing immediately
+            isGameStarted = true;
+        }
+
+        // Setup Pause panel
+        if (pausePanel == null)
+        {
+            if (canvas != null)
+            {
+                Transform pauseT = canvas.transform.Find("Pause_Panel");
+                if (pauseT != null)
+                {
+                    pausePanel = pauseT.gameObject;
+                }
+            }
+            if (pausePanel == null)
+            {
+                pausePanel = GameObject.Find("Pause_Panel");
+            }
+            if (pausePanel == null && canvas != null)
+            {
+                for (int i = 0; i < canvas.transform.childCount; i++)
+                {
+                    Transform child = canvas.transform.GetChild(i);
+                    if (child.name.ToLower().Contains("pause"))
+                    {
+                        pausePanel = child.gameObject;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Hook up Resume and Restart buttons on Pause panel
+        if (pausePanel != null)
+        {
+            Button[] buttons = pausePanel.GetComponentsInChildren<Button>(true);
+            foreach (Button btn in buttons)
+            {
+                string btnName = btn.gameObject.name.ToLower();
+                if (btnName.Contains("resume"))
+                {
+                    btn.onClick.AddListener(ResumeGame);
+                }
+                else if (btnName.Contains("restart"))
+                {
+                    btn.onClick.AddListener(RestartGame);
+                }
+            }
+            pausePanel.SetActive(false);
+        }
+    }
+
+    public void StartGame()
+    {
+        isGameStarted = true;
+        if (startPanel != null)
+        {
+            startPanel.SetActive(false);
+        }
+    }
+
+    public void PauseGame()
+    {
+        isPaused = true;
+        Time.timeScale = 0f;
+        if (pausePanel != null)
+        {
+            pausePanel.SetActive(true);
+        }
+    }
+
+    public void ResumeGame()
+    {
+        isPaused = false;
+        Time.timeScale = 1f;
+        if (pausePanel != null)
+        {
+            pausePanel.SetActive(false);
+        }
+    }
+
+    public void RestartGame()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    void OnDestroy()
+    {
+        Time.timeScale = 1f;
     }
 
     void Update()
     {
-        // Stop moving if game is over
-        if (isGameOver)
+        var keyboard = Keyboard.current;
+
+        // Toggle Pause with Escape key
+        if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+        {
+            if (isGameStarted && !isGameOver)
+            {
+                if (isPaused)
+                {
+                    ResumeGame();
+                }
+                else
+                {
+                    PauseGame();
+                }
+            }
+        }
+
+        // Wait until player clicks Play, and stop moving if paused or game over
+        if (!isGameStarted || isPaused || isGameOver)
         {
             return;
         }
@@ -92,7 +265,6 @@ public class PlayerControl : MonoBehaviour
         }
 
         // Handle keyboard input
-        var keyboard = Keyboard.current;
         if (keyboard != null)
         {
             // Move left
