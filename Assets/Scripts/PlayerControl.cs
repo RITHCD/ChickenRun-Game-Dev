@@ -6,9 +6,9 @@ using UnityEngine.SceneManagement;
 public class PlayerControl : MonoBehaviour
 {
     [Header("Player Movement")]
-    public float speed = 12f;
-    public float maxSpeed = 30f;
-    public float accel = 0.25f;
+    public float speed = 12f;          // fallback only, GameManager's speed is used when present
+    public float maxSpeed = 30f;       // unused when GameManager exists
+    public float accel = 0.25f;        // unused when GameManager exists
     public float laneDistance = 2f;
     public float jumpForce = 8f;
     public float gravity = 25f;
@@ -21,7 +21,7 @@ public class PlayerControl : MonoBehaviour
     public Vector3 cameraOffset = new Vector3(0f, 3.6f, -6.5f);
 
     [Header("Game Score")]
-    public int score = 0;
+    public int score = 0;              // fallback only
     public bool isGameOver = false;
 
     [Header("UI Panels")]
@@ -30,11 +30,15 @@ public class PlayerControl : MonoBehaviour
     public bool isGameStarted = false;
     public bool isPaused = false;
 
+    [Header("Hit Handling")]
+    public float hitCooldown = 0.5f;
+
     private int lane = 0;
     private float yVelocity = 0f;
     private bool isGrounded = true;
     private bool isCrouching = false;
     private float crouchTimer = 0f;
+    private float lastHitTime = -999f;
 
     private CapsuleCollider col;
     private float originalHeight;
@@ -145,6 +149,10 @@ public class PlayerControl : MonoBehaviour
         {
             // If no start panel in scene, start playing immediately
             isGameStarted = true;
+            if (GameManager.I != null && !GameManager.I.IsPlaying)
+            {
+                GameManager.I.StartGame();
+            }
         }
 
         // Setup Pause panel
@@ -198,6 +206,8 @@ public class PlayerControl : MonoBehaviour
 
     public void StartGame()
     {
+        if (GameManager.I != null) GameManager.I.StartGame();
+
         isGameStarted = true;
         if (startPanel != null)
         {
@@ -207,6 +217,8 @@ public class PlayerControl : MonoBehaviour
 
     public void PauseGame()
     {
+        if (GameManager.I != null) GameManager.I.Pause();
+
         isPaused = true;
         Time.timeScale = 0f;
         if (pausePanel != null)
@@ -217,6 +229,8 @@ public class PlayerControl : MonoBehaviour
 
     public void ResumeGame()
     {
+        if (GameManager.I != null) GameManager.I.Resume();
+
         isPaused = false;
         Time.timeScale = 1f;
         if (pausePanel != null)
@@ -227,6 +241,13 @@ public class PlayerControl : MonoBehaviour
 
     public void RestartGame()
     {
+        if (GameManager.I != null)
+        {
+            // GameManager.Restart() reloads the scene itself
+            GameManager.I.Restart();
+            return;
+        }
+
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
@@ -238,6 +259,9 @@ public class PlayerControl : MonoBehaviour
 
     void Update()
     {
+        // Sync game over from GameManager
+        if (GameManager.I != null && GameManager.I.State == GameState.GameOver) isGameOver = true;
+
         var keyboard = Keyboard.current;
 
         // Toggle Pause with Escape key
@@ -256,16 +280,17 @@ public class PlayerControl : MonoBehaviour
             }
         }
 
+        // R restarts after game over
+        if (isGameOver && keyboard != null && keyboard.rKey.wasPressedThisFrame)
+        {
+            RestartGame();
+            return;
+        }
+
         // Wait until player clicks Play, and stop moving if paused or game over
         if (!isGameStarted || isPaused || isGameOver)
         {
             return;
-        }
-
-        // Increase speed slowly over time
-        if (speed < maxSpeed)
-        {
-            speed += accel * Time.deltaTime;
         }
 
         // Handle keyboard input
@@ -332,7 +357,9 @@ public class PlayerControl : MonoBehaviour
             if (col != null)
             {
                 col.height = crouchHeight;
-                col.center = new Vector3(0f, crouchHeight * 0.5f, 0f);
+                col.center = new Vector3(originalCenter.x,
+                    originalCenter.y - (originalHeight - crouchHeight) * 0.5f,
+                    originalCenter.z);
             }
 
             if (chickenModel != null)
@@ -361,7 +388,10 @@ public class PlayerControl : MonoBehaviour
         // Move player forward and change lanes
         Vector3 pos = transform.position;
         pos.x = Mathf.Lerp(pos.x, lane * laneDistance, 12f * Time.deltaTime);
-        pos.z += speed * Time.deltaTime;
+
+        // Speed comes from GameManager / SpeedController
+        float s = GameManager.I != null ? GameManager.I.Speed : speed;
+        pos.z += s * Time.deltaTime;
 
         // Apply jumping and gravity
         if (!isGrounded)
@@ -393,18 +423,27 @@ public class PlayerControl : MonoBehaviour
         }
     }
 
+    // CompareTag throws if the tag doesn't exist, so wrap it
+    static bool HasTag(GameObject go, string tag)
+    {
+        try { return go.CompareTag(tag); }
+        catch { return false; }
+    }
+
     // Trigger detection for eggs and obstacles
     void OnTriggerEnter(Collider other)
     {
+        if (isGameOver) return;
+
         // Collect white egg (+1 score)
-        if (other.CompareTag("Egg") || other.name.Contains("Egg"))
+        if (HasTag(other.gameObject, "Egg") || other.name.Contains("Egg"))
         {
-            score++;
+            if (GameManager.I != null) GameManager.I.AddEgg(); else score++;
             Destroy(other.gameObject);
             return;
         }
 
-        // Hit obstacle -> stop the game
+        // Hit obstacle
         Obstacle obstacle = other.GetComponentInParent<Obstacle>();
         if (obstacle != null)
         {
@@ -416,7 +455,7 @@ public class PlayerControl : MonoBehaviour
 
             HitObstacle(obstacle, other.gameObject);
         }
-        else if (other.CompareTag("Obstacle"))
+        else if (HasTag(other.gameObject, "Obstacle"))
         {
             HitObstacle(obstacle, other.gameObject);
         }
@@ -425,6 +464,8 @@ public class PlayerControl : MonoBehaviour
     // Physical collision detection
     void OnCollisionEnter(Collision collision)
     {
+        if (isGameOver) return;
+
         Obstacle obstacle = collision.gameObject.GetComponentInParent<Obstacle>();
         if (obstacle != null)
         {
@@ -436,7 +477,7 @@ public class PlayerControl : MonoBehaviour
 
             HitObstacle(obstacle, collision.gameObject);
         }
-        else if (collision.gameObject.CompareTag("Obstacle"))
+        else if (HasTag(collision.gameObject, "Obstacle"))
         {
             HitObstacle(obstacle, collision.gameObject);
         }
@@ -451,6 +492,10 @@ public class PlayerControl : MonoBehaviour
             return;
         }
 
+        // Ignore duplicate contacts (trigger + collision, or several colliders on one obstacle)
+        if (Time.time - lastHitTime < hitCooldown) return;
+        lastHitTime = Time.time;
+
         Debug.Log("Hit obstacle: " + hitObj.name);
 
         // Remove the obstacle so one hit is counted once
@@ -459,7 +504,11 @@ public class PlayerControl : MonoBehaviour
             Destroy(obstacle.gameObject);
         }
 
-        if (FoxChase.I != null)
+        if (GameManager.I != null)
+        {
+            GameManager.I.Hit();
+        }
+        else if (FoxChase.I != null)
         {
             FoxChase.I.Hit();
         }
