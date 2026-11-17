@@ -141,6 +141,7 @@ public class PlayerControl : MonoBehaviour
         {
             // If no start panel in scene, start playing immediately
             isGameStarted = true;
+            if (GameManager.I != null) GameManager.I.StartGame();
         }
 
         // Setup Pause panel
@@ -194,6 +195,7 @@ public class PlayerControl : MonoBehaviour
 
     public void StartGame()
     {
+        if (GameManager.I != null) GameManager.I.StartGame();
         isGameStarted = true;
         if (startPanel != null)
         {
@@ -203,6 +205,7 @@ public class PlayerControl : MonoBehaviour
 
     public void PauseGame()
     {
+        if (GameManager.I != null) GameManager.I.Pause();
         isPaused = true;
         Time.timeScale = 0f;
         if (pausePanel != null)
@@ -213,6 +216,7 @@ public class PlayerControl : MonoBehaviour
 
     public void ResumeGame()
     {
+        if (GameManager.I != null) GameManager.I.Resume();
         isPaused = false;
         Time.timeScale = 1f;
         if (pausePanel != null)
@@ -223,8 +227,12 @@ public class PlayerControl : MonoBehaviour
 
     public void RestartGame()
     {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        if (GameManager.I != null) GameManager.I.Restart();
+        else
+        {
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
     }
 
     void OnDestroy()
@@ -234,6 +242,12 @@ public class PlayerControl : MonoBehaviour
 
     void Update()
     {
+        // GameManager decides when the game is over (second hit)
+        if (GameManager.I != null && GameManager.I.State == GameState.GameOver)
+        {
+            isGameOver = true;
+        }
+
         var keyboard = Keyboard.current;
 
         // Toggle Pause with Escape key
@@ -258,10 +272,16 @@ public class PlayerControl : MonoBehaviour
             return;
         }
 
-        // Increase speed slowly over time
-        if (speed < maxSpeed)
+        // Speed: GameManager makes it grow. If there is no GameManager, use the old way.
+        float moveSpeed = speed;
+        if (GameManager.I != null)
+        {
+            moveSpeed = GameManager.I.Speed;
+        }
+        else if (speed < maxSpeed)
         {
             speed += accel * Time.deltaTime;
+            moveSpeed = speed;
         }
 
         // Handle keyboard input
@@ -357,7 +377,7 @@ public class PlayerControl : MonoBehaviour
         // Move player forward and change lanes
         Vector3 pos = transform.position;
         pos.x = Mathf.Lerp(pos.x, lane * laneDistance, 12f * Time.deltaTime);
-        pos.z += speed * Time.deltaTime;
+        pos.z += moveSpeed * Time.deltaTime;
 
         // Apply jumping and gravity
         if (!isGrounded)
@@ -389,18 +409,51 @@ public class PlayerControl : MonoBehaviour
         }
     }
 
+    // Called when the chicken hits an obstacle it did not avoid
+    void HitObstacle(GameObject target)
+    {
+        Debug.Log("Hit obstacle: " + target.name);
+
+        if (GameManager.I != null)
+        {
+            // First hit: fox appears. Second hit: game over (GameManager decides).
+            GameManager.I.Hit();
+
+            // Switch off this obstacle so it cannot hit again
+            Collider[] cols = target.GetComponentsInChildren<Collider>();
+            foreach (Collider c in cols)
+            {
+                c.enabled = false;
+            }
+        }
+        else
+        {
+            // Old behavior if there is no GameManager in the scene
+            isGameOver = true;
+            speed = 0f;
+        }
+    }
+
     // Trigger detection for eggs and obstacles
     void OnTriggerEnter(Collider other)
     {
-        // Collect white egg (+1 score)
+        // Collect white egg (+1 egg)
         if (other.CompareTag("Egg") || other.name.Contains("Egg"))
         {
-            score++;
+            if (GameManager.I != null)
+            {
+                GameManager.I.AddEgg();
+                score = GameManager.I.Eggs;
+            }
+            else
+            {
+                score++;
+            }
             Destroy(other.gameObject);
             return;
         }
 
-        // Hit obstacle -> stop the game
+        // Hit obstacle
         Obstacle obstacle = other.GetComponentInParent<Obstacle>();
         if (obstacle != null)
         {
@@ -416,9 +469,7 @@ public class PlayerControl : MonoBehaviour
                 return;
             }
 
-            Debug.Log("Hit obstacle: " + other.name);
-            isGameOver = true;
-            speed = 0f;
+            HitObstacle(obstacle.gameObject);
         }
         else if (other.CompareTag("Obstacle") || other.name.ToLower().Contains("obstacle") || other.name.ToLower().Contains("haybale") || other.name.ToLower().Contains("fence") || other.name.ToLower().Contains("rock") || other.name.ToLower().Contains("bench") || other.name.ToLower().Contains("beam"))
         {
@@ -434,9 +485,7 @@ public class PlayerControl : MonoBehaviour
                 return;
             }
 
-            Debug.Log("Hit obstacle: " + other.name);
-            isGameOver = true;
-            speed = 0f;
+            HitObstacle(other.gameObject);
         }
     }
 
@@ -458,9 +507,7 @@ public class PlayerControl : MonoBehaviour
                 return;
             }
 
-            Debug.Log("Hit obstacle: " + collision.gameObject.name);
-            isGameOver = true;
-            speed = 0f;
+            HitObstacle(obstacle.gameObject);
         }
         else if (collision.gameObject.CompareTag("Obstacle") || collision.gameObject.name.ToLower().Contains("obstacle") || collision.gameObject.name.ToLower().Contains("haybale") || collision.gameObject.name.ToLower().Contains("fence") || collision.gameObject.name.ToLower().Contains("rock") || collision.gameObject.name.ToLower().Contains("bench") || collision.gameObject.name.ToLower().Contains("beam"))
         {
@@ -476,9 +523,7 @@ public class PlayerControl : MonoBehaviour
                 return;
             }
 
-            Debug.Log("Hit obstacle: " + collision.gameObject.name);
-            isGameOver = true;
-            speed = 0f;
+            HitObstacle(collision.gameObject);
         }
     }
 }

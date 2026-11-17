@@ -8,7 +8,7 @@ public class GameManager : MonoBehaviour
     public static GameManager I;
     public static event Action OnGameOver;
 
-    public bool autoStart = true;      // Visal turns this off when the Start screen is ready
+    public bool autoStart = false;     // the Start panel in PlayerControl starts the game
 
     public GameState State { get; private set; }
     public bool IsPlaying { get { return State == GameState.Playing; } }
@@ -21,7 +21,6 @@ public class GameManager : MonoBehaviour
     SpeedController speedCtl;
     ScoreManager scoreMgr;
     FoxManager foxMgr;
-    static bool restarting;
 
     void Awake()
     {
@@ -29,13 +28,12 @@ public class GameManager : MonoBehaviour
         speedCtl = GetComponent<SpeedController>();
         scoreMgr = GetComponent<ScoreManager>();
         foxMgr = GetComponent<FoxManager>();
+        State = GameState.Menu;
     }
 
     void Start()
     {
-        State = GameState.Menu;
-        Time.timeScale = 0f;
-        if (autoStart || restarting) { restarting = false; StartGame(); }
+        if (autoStart) StartGame();
     }
 
     public void StartGame()
@@ -63,12 +61,11 @@ public class GameManager : MonoBehaviour
 
     public void Restart()
     {
-        restarting = true;
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    // Your team calls these two from the player script
+    // PlayerControl calls these two
     public void AddEgg(int n = 1) { if (IsPlaying) scoreMgr.AddEgg(n); }
     public void Hit() { foxMgr.RegisterHit(); }
 
@@ -81,7 +78,7 @@ public class GameManager : MonoBehaviour
         if (OnGameOver != null) OnGameOver();
     }
 
-    void OnGUI()   // temporary test text, Visal deletes it later
+    void OnGUI()   // temporary test text, delete before submitting
     {
         GUI.Label(new Rect(10, 10, 450, 25),
             "State " + State + "  Speed " + Speed.ToString("0.0") + "  Hits " + Hits + "  Score " + Score + "  Eggs " + Eggs);
