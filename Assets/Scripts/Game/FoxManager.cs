@@ -2,13 +2,29 @@ using UnityEngine;
 
 public class FoxManager : MonoBehaviour
 {
-    public GameObject fox;             // optional, leave empty until the fox is ready
+    public GameObject fox;             // optional, not needed
     public float foxAwayTime = 10f;    // safe seconds before the fox goes away
     public float hitCooldown = 1.2f;   // ignore extra hits right after a hit
 
     public int Hits { get; private set; }
 
     float foxTimer, nextHitTime;
+
+    void Awake()
+    {
+        // create the chasing fox automatically if the scene has none
+        if (FoxChase.I == null)
+        {
+            GameObject go = new GameObject("FoxChase");
+            FoxChase fc = go.AddComponent<FoxChase>();
+            fc.stopTimeOnCatch = false;   // GameManager handles game over
+            if (fc.player == null)
+            {
+                PlayerControl pc = FindFirstObjectByType<PlayerControl>();
+                if (pc != null) fc.player = pc.transform;
+            }
+        }
+    }
 
     void Start() { Show(false); }
 
@@ -31,6 +47,9 @@ public class FoxManager : MonoBehaviour
         if (Time.time < nextHitTime) return;
         nextHitTime = Time.time + hitCooldown;
         Hits++; foxTimer = 0f;
+
+        if (FoxChase.I != null) FoxChase.I.Hit();   // fox runs up behind the chicken
+
         if (Hits >= 2) GameManager.I.GameOver();
         else Show(true);
     }
