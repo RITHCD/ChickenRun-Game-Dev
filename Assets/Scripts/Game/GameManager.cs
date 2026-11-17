@@ -22,6 +22,7 @@ public class GameManager : MonoBehaviour
     ScoreManager scoreMgr;
     FoxManager foxMgr;
     static bool restarting;
+    GUIStyle scoreStyle;
 
     void Awake()
     {
@@ -81,9 +82,19 @@ public class GameManager : MonoBehaviour
         if (OnGameOver != null) OnGameOver();
     }
 
-    void OnGUI()   // temporary test text, Visal deletes it later
+    void OnGUI()
     {
-        GUI.Label(new Rect(10, 10, 450, 25),
-            "State " + State + "  Speed " + Speed.ToString("0.0") + "  Hits " + Hits + "  Score " + Score + "  Eggs " + Eggs);
+        if (State == GameState.Menu) return;
+
+        if (scoreStyle == null)
+        {
+            scoreStyle = new GUIStyle(GUI.skin.label);
+            scoreStyle.fontSize = 32;
+            scoreStyle.fontStyle = FontStyle.Bold;
+            scoreStyle.alignment = TextAnchor.UpperRight;
+            scoreStyle.normal.textColor = Color.white;
+        }
+
+        GUI.Label(new Rect(Screen.width - 220, 20, 200, 50), "Score: " + Score, scoreStyle);
     }
 }

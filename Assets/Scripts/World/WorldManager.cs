@@ -24,6 +24,27 @@ public class WorldManager : MonoBehaviour
 
     void Start()
     {
+        // Fallback: try to find the player by tag if it wasn't assigned in the Inspector
+        if (player == null)
+        {
+            GameObject p = GameObject.FindWithTag("Player");
+            if (p != null) player = p.transform;
+        }
+
+        if (player == null)
+        {
+            Debug.LogError("WorldManager on '" + name + "' has no player assigned!", this);
+            enabled = false;   // stops Update from spamming errors
+            return;
+        }
+
+        if (tilePrefabs == null || tilePrefabs.Length == 0)
+        {
+            Debug.LogError("WorldManager on '" + name + "' has no tile prefabs assigned!", this);
+            enabled = false;
+            return;
+        }
+
         for (int i = 0; i < tileCount; i++)
         {
             GroundTile t = Instantiate(tilePrefabs[i % tilePrefabs.Length], transform);
@@ -33,6 +54,8 @@ public class WorldManager : MonoBehaviour
 
     void Update()
     {
+        if (player == null || tiles.Count == 0) return;
+
         GroundTile first = tiles.Peek();
         // recycle a tile once the player is well past its end
         if (player.position.z > first.transform.position.z + tileLength + 10f)
@@ -58,7 +81,7 @@ public class WorldManager : MonoBehaviour
         int lane = Random.Range(-1, 2);
         int eggLane = lane;
 
-        if (Random.value < obstacleChance)
+        if (obstaclePrefabs != null && obstaclePrefabs.Length > 0 && Random.value < obstacleChance)
         {
             float oz = z + Random.Range(5f, tileLength - 5f);
             Spawn(RandomObstacle(), lane, oz, t.items);
@@ -81,6 +104,8 @@ public class WorldManager : MonoBehaviour
     void SpawnEggs(GroundTile t, int lane, float z)
     {
         GameObject prefab = Random.value < goldChance ? goldEggPrefab : eggPrefab;
+        if (prefab == null) return;
+
         float startZ = z + Random.Range(3f, 8f);
         for (int i = 0; i < 5; i++)
             Spawn(prefab, lane, startZ + i * 2f, t.items);
