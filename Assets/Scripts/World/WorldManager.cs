@@ -22,13 +22,29 @@ public class WorldManager : MonoBehaviour
     float nextZ;
     int created;
 
-    void Awake()
-    {
-        FindPlayer();
-    }
-
     void Start()
     {
+        // Fallback: try to find the player by tag if it wasn't assigned in the Inspector
+        if (player == null)
+        {
+            GameObject p = GameObject.FindWithTag("Player");
+            if (p != null) player = p.transform;
+        }
+
+        if (player == null)
+        {
+            Debug.LogError("WorldManager on '" + name + "' has no player assigned!", this);
+            enabled = false;   // stops Update from spamming errors
+            return;
+        }
+
+        if (tilePrefabs == null || tilePrefabs.Length == 0)
+        {
+            Debug.LogError("WorldManager on '" + name + "' has no tile prefabs assigned!", this);
+            enabled = false;
+            return;
+        }
+
         for (int i = 0; i < tileCount; i++)
         {
             GroundTile t = Instantiate(tilePrefabs[i % tilePrefabs.Length], transform);
@@ -36,36 +52,11 @@ public class WorldManager : MonoBehaviour
         }
     }
 
-    void FindPlayer()
-    {
-        if (player != null) return;
-
-        PlayerControl pc = FindObjectOfType<PlayerControl>();
-        if (pc != null)
-        {
-            player = pc.transform;
-            return;
-        }
-
-        GameObject p = GameObject.FindWithTag("Player");
-        if (p != null)
-        {
-            player = p.transform;
-            return;
-        }
-
-        GameObject cp = GameObject.Find("ChickenPlayer");
-        if (cp != null)
-        {
-            player = cp.transform;
-        }
-    }
-
     void Update()
     {
-        GroundTile first = tiles.Peek();
-        if (first == null) return;
+        if (player == null || tiles.Count == 0) return;
 
+        GroundTile first = tiles.Peek();
         // recycle a tile once the player is well past its end
         if (player.position.z > first.transform.position.z + tileLength + 10f)
         {
@@ -93,20 +84,12 @@ public class WorldManager : MonoBehaviour
         if (obstaclePrefabs != null && obstaclePrefabs.Length > 0 && Random.value < obstacleChance)
         {
             float oz = z + Random.Range(5f, tileLength - 5f);
-            GameObject obs = RandomObstacle();
-            if (obs != null)
-            {
-                Spawn(obs, lane, oz, t.items);
-            }
+            Spawn(RandomObstacle(), lane, oz, t.items);
 
             if (Random.value < doubleObstacleChance)
             {
                 int lane2 = OtherLane(lane);
-                GameObject obs2 = RandomObstacle();
-                if (obs2 != null)
-                {
-                    Spawn(obs2, lane2, oz, t.items);
-                }
+                Spawn(RandomObstacle(), lane2, oz, t.items);
                 eggLane = -(lane + lane2);   // the free lane
             }
             else
@@ -130,7 +113,6 @@ public class WorldManager : MonoBehaviour
 
     GameObject RandomObstacle()
     {
-        if (obstaclePrefabs == null || obstaclePrefabs.Length == 0) return null;
         return obstaclePrefabs[Random.Range(0, obstaclePrefabs.Length)];
     }
 
@@ -143,8 +125,7 @@ public class WorldManager : MonoBehaviour
 
     void Spawn(GameObject prefab, int lane, float z, Transform parent)
     {
-        if (prefab == null) return;
         Vector3 pos = new Vector3(lane * laneDistance, prefab.transform.position.y, z);
-        Instantiate(prefab, pos, prefab.transform.rotation, parent != null ? parent : transform);
+        Instantiate(prefab, pos, prefab.transform.rotation, parent);
     }
 }
