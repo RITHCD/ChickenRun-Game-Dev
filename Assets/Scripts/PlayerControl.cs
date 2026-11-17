@@ -51,7 +51,7 @@ public class PlayerControl : MonoBehaviour
     void Start()
     {
         // Connect to WorldManager so endless tiles keep spawning
-        WorldManager wm = FindObjectOfType<WorldManager>();
+        WorldManager wm = FindFirstObjectByType<WorldManager>();
         if (wm != null)
         {
             if (wm.player == null)
@@ -89,7 +89,7 @@ public class PlayerControl : MonoBehaviour
         }
 
         // Ensure Canvas has camera assigned
-        Canvas canvas = FindObjectOfType<Canvas>();
+        Canvas canvas = FindFirstObjectByType<Canvas>();
         if (canvas != null && canvas.worldCamera == null)
         {
             canvas.worldCamera = Camera.main;
@@ -145,6 +145,7 @@ public class PlayerControl : MonoBehaviour
         {
             // If no start panel in scene, start playing immediately
             isGameStarted = true;
+            if (GameManager.I != null) GameManager.I.StartGame();   // CHANGED: tell GameManager too
         }
 
         // Setup Pause panel
@@ -203,12 +204,14 @@ public class PlayerControl : MonoBehaviour
         {
             startPanel.SetActive(false);
         }
+        if (GameManager.I != null) GameManager.I.StartGame();       // CHANGED: GameManager state -> Playing
     }
 
     public void PauseGame()
     {
         isPaused = true;
         Time.timeScale = 0f;
+        if (GameManager.I != null) GameManager.I.Pause();           // CHANGED: keep GameManager in sync
         if (pausePanel != null)
         {
             pausePanel.SetActive(true);
@@ -219,6 +222,7 @@ public class PlayerControl : MonoBehaviour
     {
         isPaused = false;
         Time.timeScale = 1f;
+        if (GameManager.I != null) GameManager.I.Resume();          // CHANGED: keep GameManager in sync
         if (pausePanel != null)
         {
             pausePanel.SetActive(false);
@@ -400,6 +404,7 @@ public class PlayerControl : MonoBehaviour
         if (other.CompareTag("Egg") || other.name.Contains("Egg"))
         {
             score++;
+            if (GameManager.I != null) GameManager.I.AddEgg();      // CHANGED: GameManager counts eggs too
             Destroy(other.gameObject);
             return;
         }
@@ -459,7 +464,12 @@ public class PlayerControl : MonoBehaviour
             Destroy(obstacle.gameObject);
         }
 
-        if (FoxChase.I != null)
+        // CHANGED: GameManager -> FoxManager -> FoxChase now handles the hit
+        if (GameManager.I != null)
+        {
+            GameManager.I.Hit();
+        }
+        else if (FoxChase.I != null)
         {
             FoxChase.I.Hit();
         }
