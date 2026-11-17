@@ -118,15 +118,21 @@ public static class DesertMapBuilder
         string path = ObsDir + "/Beam.prefab";
         var existing = Load(path);
         if (existing != null) return existing;
-        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        go.name = "Beam";
-        go.transform.position = new Vector3(0f, 1.7f, 0f);
-        go.transform.localScale = new Vector3(2f, 0.4f, 0.4f);
-        go.GetComponent<Renderer>().sharedMaterial = mat;
-        go.GetComponent<BoxCollider>().isTrigger = true;
-        go.AddComponent<Obstacle>().type = Obstacle.Type.High;
-        var prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
-        Object.DestroyImmediate(go);
+        var root = new GameObject("Beam");
+        root.tag = "Obstacle";
+        var t = root.transform;
+        Prim(PrimitiveType.Cube, "Bar", t, new Vector3(0f, 1.35f, 0f), new Vector3(2.2f, 0.35f, 0.35f), mat);
+        Prim(PrimitiveType.Cube, "PostL", t, new Vector3(-1.05f, 1.4f, 0f), new Vector3(0.18f, 2.8f, 0.25f), mat);
+        Prim(PrimitiveType.Cube, "PostR", t, new Vector3(1.05f, 1.4f, 0f), new Vector3(0.18f, 2.8f, 0.25f), mat);
+        Prim(PrimitiveType.Cube, "UpperPanel", t, new Vector3(0f, 2.05f, 0f), new Vector3(2.15f, 1.1f, 0.2f), mat);
+        Prim(PrimitiveType.Cube, "TopBar", t, new Vector3(0f, 2.65f, 0f), new Vector3(2.2f, 0.25f, 0.3f), mat);
+        var bc = root.AddComponent<BoxCollider>();
+        bc.isTrigger = true;
+        bc.center = new Vector3(0f, 2.9f, 0f);
+        bc.size = new Vector3(2.2f, 3.5f, 0.5f);
+        root.AddComponent<Obstacle>().type = Obstacle.Type.High;
+        var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
+        Object.DestroyImmediate(root);
         return prefab;
     }
 
@@ -159,7 +165,7 @@ public static class DesertMapBuilder
         Prim(PrimitiveType.Sphere, "RockA", t, new Vector3(-0.2f, 0.35f, 0f), new Vector3(1.2f, 0.8f, 1f), rock, new Vector3(0f, 20f, 0f));
         Prim(PrimitiveType.Sphere, "RockB", t, new Vector3(0.4f, 0.25f, 0.2f), new Vector3(0.8f, 0.6f, 0.7f), rock, new Vector3(0f, -30f, 0f));
         var bc = root.AddComponent<BoxCollider>();
-        bc.isTrigger = true; bc.center = new Vector3(0f, 0.4f, 0f); bc.size = new Vector3(1.6f, 0.9f, 1.1f);
+        bc.isTrigger = true; bc.center = new Vector3(0f, 0.25f, 0f); bc.size = new Vector3(1.4f, 0.5f, 0.6f);
         root.AddComponent<Obstacle>().type = Obstacle.Type.Low;
         var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
         Object.DestroyImmediate(root);
@@ -276,7 +282,13 @@ public static class DesertMapBuilder
         var oldWorld = GameObject.Find("World");
         if (oldWorld != null) Object.DestroyImmediate(oldWorld);
 
-        var player = GameObject.FindWithTag("Player");
+        var player = GameObject.Find("Player");
+        if (player == null) player = GameObject.Find("ChickenPlayer");
+        if (player == null)
+        {
+            var pc = Object.FindAnyObjectByType<PlayerControl>();
+            if (pc != null) player = pc.gameObject;
+        }
         if (player == null)
         {
             player = GameObject.CreatePrimitive(PrimitiveType.Cube);

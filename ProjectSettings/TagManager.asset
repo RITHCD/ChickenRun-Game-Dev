@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Egg
   - Gold
+  - Obstacle
   layers:
   - Default
   - TransparentFX
