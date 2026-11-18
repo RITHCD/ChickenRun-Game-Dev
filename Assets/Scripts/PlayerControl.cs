@@ -10,8 +10,8 @@ public class PlayerControl : MonoBehaviour
     public float maxSpeed = 30f;
     public float accel = 0.25f;
     public float laneDistance = 2f;
-    public float jumpForce = 8f;
-    public float gravity = 25f;
+    public float jumpForce = 9.5f;
+    public float gravity = 22f;
 
     [Header("Crouch Settings")]
     public float crouchDuration = 0.8f;
@@ -403,11 +403,12 @@ public class PlayerControl : MonoBehaviour
     // Trigger detection for eggs and obstacles
     void OnTriggerEnter(Collider other)
     {
-        // Collect white egg (+1 score)
+        // Collect egg
         if (other.CompareTag("Egg") || other.name.Contains("Egg"))
         {
-            score++;
-            if (GameManager.I != null) GameManager.I.AddEgg();      // CHANGED: GameManager counts eggs too
+            int eggCount = other.name.ToLower().Contains("gold") ? 3 : 1;
+            score += eggCount;
+            if (GameManager.I != null) GameManager.I.AddEgg(eggCount);
             Destroy(other.gameObject);
             return;
         }
@@ -416,16 +417,22 @@ public class PlayerControl : MonoBehaviour
         Obstacle obstacle = other.GetComponentInParent<Obstacle>();
         if (obstacle != null)
         {
-            // Duck under high beam when crouching
-            if (obstacle.type == Obstacle.Type.High && isCrouching)
+            // Duck under high beam or bench when crouching on ground
+            if (isCrouching && (isGrounded || transform.position.y < 0.25f) && (obstacle.type == Obstacle.Type.High || obstacle.gameObject.name.ToLower().Contains("bench") || obstacle.gameObject.name.ToLower().Contains("beam")))
             {
                 return;
             }
 
             HitObstacle(obstacle, other.gameObject);
         }
-        else if (other.CompareTag("Obstacle"))
+        else if (other.CompareTag("Obstacle") || other.name.ToLower().Contains("obstacle") || other.name.ToLower().Contains("beam") || other.name.ToLower().Contains("bench"))
         {
+            // Duck under beam / bench when crouching on ground
+            if (isCrouching && (isGrounded || transform.position.y < 0.25f) && (other.name.ToLower().Contains("beam") || other.name.ToLower().Contains("bench")))
+            {
+                return;
+            }
+
             HitObstacle(obstacle, other.gameObject);
         }
     }
@@ -436,16 +443,22 @@ public class PlayerControl : MonoBehaviour
         Obstacle obstacle = collision.gameObject.GetComponentInParent<Obstacle>();
         if (obstacle != null)
         {
-            // Duck under high beam when crouching
-            if (obstacle.type == Obstacle.Type.High && isCrouching)
+            // Duck under high beam or bench when crouching on ground
+            if (isCrouching && (isGrounded || transform.position.y < 0.25f) && (obstacle.type == Obstacle.Type.High || obstacle.gameObject.name.ToLower().Contains("bench") || obstacle.gameObject.name.ToLower().Contains("beam")))
             {
                 return;
             }
 
             HitObstacle(obstacle, collision.gameObject);
         }
-        else if (collision.gameObject.CompareTag("Obstacle"))
+        else if (collision.gameObject.CompareTag("Obstacle") || collision.gameObject.name.ToLower().Contains("obstacle") || collision.gameObject.name.ToLower().Contains("beam") || collision.gameObject.name.ToLower().Contains("bench"))
         {
+            // Duck under beam / bench when crouching on ground
+            if (isCrouching && (isGrounded || transform.position.y < 0.25f) && (collision.gameObject.name.ToLower().Contains("beam") || collision.gameObject.name.ToLower().Contains("bench")))
+            {
+                return;
+            }
+
             HitObstacle(obstacle, collision.gameObject);
         }
     }
@@ -453,8 +466,8 @@ public class PlayerControl : MonoBehaviour
     // Called for every obstacle hit. 1st hit: the fox chases. 2nd hit: the fox catches the chicken.
     void HitObstacle(Obstacle obstacle, GameObject hitObj)
     {
-        // Jumped over a Low obstacle: no hit
-        if (obstacle != null && obstacle.type == Obstacle.Type.Low && transform.position.y > 0.8f)
+        // Jumped over a Low obstacle (like rock, haybale, fence, bench) when in the air
+        if (obstacle != null && obstacle.type == Obstacle.Type.Low && !isGrounded && transform.position.y > 0.35f)
         {
             return;
         }
