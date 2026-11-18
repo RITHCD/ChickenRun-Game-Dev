@@ -5,10 +5,10 @@ using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
 // Subway-Surfers style chaser:
-//   from the start -> the fox runs behind the chicken
-//   1st obstacle hit -> the fox runs up close
+//   at the start -> the fox runs behind the chicken for a moment, then falls back and leaves
+//   1st obstacle hit -> the fox appears behind the chicken and runs up close
 //   2nd hit while the fox is close -> the fox catches the chicken, game over
-//   no hit for forgiveTime seconds -> the fox drops back
+//   no hit for forgiveTime seconds -> the fox gives up and leaves
 public class FoxChase : MonoBehaviour
 {
     public static FoxChase I;
@@ -18,13 +18,16 @@ public class FoxChase : MonoBehaviour
     public Transform player;                // auto-found by the tag "Player"
     public GameObject foxPrefab;            // optional: your own fox model (should face +Z)
 
+    [Header("Start chase (intro)")]
+    public float introTime = 1.5f;          // CHANGED: seconds the fox chases at the start. 0 = no intro
+    public float introGap = 3f;             // CHANGED: distance behind the chicken during the intro
+
     [Header("Chase settings")]
-    public bool chaseFromStart = true;      // CHANGED: the fox runs behind the chicken from the start
-    public float idleGap = 3.6f;            // CHANGED: distance behind the chicken before any hit
-    public float chaseGap = 2.2f;           // CHANGED: distance after the 1st hit (was 3.5, too low to see)
-    public float hiddenGap = 20f;           // where the fox starts and leaves to (when chaseFromStart is off)
+    public float chaseGap = 2.2f;           // distance behind the chicken after the 1st hit
+    public float hiddenGap = 20f;           // where the fox starts and leaves to
     public float closeSpeed = 6f;           // how fast the fox runs up to the chicken
-    public float forgiveTime = 10f;         // safe seconds before the fox drops back
+    public float retreatSpeed = 10f;        // CHANGED: how fast the fox falls back and leaves
+    public float forgiveTime = 10f;         // safe seconds before the fox gives up
     public float hitCooldown = 1f;          // ignore repeat hits right after a hit
     public float sideSpeed = 8f;            // how fast the fox changes lane
     public bool stopTimeOnCatch = true;     // untick if your GameManager handles game over
@@ -39,7 +42,7 @@ public class FoxChase : MonoBehaviour
 
     GameObject fox;
     Transform tail;
-    float gap, targetGap, chaseTimer, cooldown, runTime;
+    float gap, targetGap, chaseTimer, cooldown, runTime, introTimer;
     bool retreating;
 
     void Awake()
@@ -57,7 +60,7 @@ public class FoxChase : MonoBehaviour
         gap = targetGap = hiddenGap;
     }
 
-    // CHANGED: call this when the game starts or restarts
+    // CHANGED: called when the game starts. The fox chases for introTime seconds, then leaves.
     public void ResetChase()
     {
         IsCaught = false;
@@ -65,13 +68,15 @@ public class FoxChase : MonoBehaviour
         cooldown = 0f;
         retreating = false;
         chaseTimer = 0f;
+        introTimer = 0f;
         if (player == null || fox == null) return;
 
-        if (chaseFromStart)
+        if (introTime > 0f)
         {
-            gap = targetGap = idleGap;
+            gap = targetGap = introGap;
             fox.transform.position = new Vector3(player.position.x, 0f, player.position.z - gap);
             fox.SetActive(true);
+            introTimer = introTime;
         }
         else
         {
@@ -86,6 +91,7 @@ public class FoxChase : MonoBehaviour
         if (IsCaught || cooldown > 0f || player == null) return;
         cooldown = hitCooldown;
         Hits++;
+        introTimer = 0f;                     // CHANGED: a hit cancels the intro
 
         if (Hits >= 2) { Catch(); return; }
 
@@ -137,26 +143,32 @@ public class FoxChase : MonoBehaviour
         if (!fox.activeSelf) return;
         runTime += Time.deltaTime;
 
-        // CHANGED: only count down after a hit. After forgiveTime the fox drops back.
+        // CHANGED: intro over -> the fox falls back and leaves
+        if (introTimer > 0f)
+        {
+            introTimer -= Time.deltaTime;
+            if (introTimer <= 0f && Hits == 0 && !IsCaught)
+            {
+                retreating = true;
+                targetGap = hiddenGap;
+            }
+        }
+
+        // after a hit: no hit for forgiveTime seconds -> the fox leaves
         if (!IsCaught && !retreating && Hits > 0)
         {
             chaseTimer -= Time.deltaTime;
             if (chaseTimer <= 0f)
             {
                 Hits = 0;
-                if (chaseFromStart)
-                {
-                    targetGap = idleGap;     // fox stays behind the chicken, but farther
-                }
-                else
-                {
-                    retreating = true;       // fox leaves
-                    targetGap = hiddenGap;
-                }
+                retreating = true;
+                targetGap = hiddenGap;
             }
         }
 
-        float speed = IsCaught ? closeSpeed * 2.5f : closeSpeed;
+        float speed = closeSpeed;
+        if (IsCaught) speed = closeSpeed * 2.5f;
+        else if (retreating) speed = retreatSpeed;
         gap = Mathf.MoveTowards(gap, targetGap, speed * Time.deltaTime);
 
         if (retreating && gap >= hiddenGap - 0.01f)
