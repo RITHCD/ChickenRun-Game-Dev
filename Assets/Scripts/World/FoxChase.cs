@@ -5,9 +5,10 @@ using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
 // Subway-Surfers style chaser:
-//   1st obstacle hit -> the fox appears behind the chicken and runs up close
-//   2nd hit while the fox is chasing -> the fox catches the chicken, game over
-//   no hit for forgiveTime seconds -> the fox gives up and leaves
+//   from the start -> the fox runs behind the chicken
+//   1st obstacle hit -> the fox runs up close
+//   2nd hit while the fox is close -> the fox catches the chicken, game over
+//   no hit for forgiveTime seconds -> the fox drops back
 public class FoxChase : MonoBehaviour
 {
     public static FoxChase I;
@@ -18,10 +19,12 @@ public class FoxChase : MonoBehaviour
     public GameObject foxPrefab;            // optional: your own fox model (should face +Z)
 
     [Header("Chase settings")]
-    public float chaseGap = 3.5f;           // distance behind the chicken while chasing
-    public float hiddenGap = 20f;           // where the fox starts and leaves to
+    public bool chaseFromStart = true;      // CHANGED: the fox runs behind the chicken from the start
+    public float idleGap = 3.6f;            // CHANGED: distance behind the chicken before any hit
+    public float chaseGap = 2.2f;           // CHANGED: distance after the 1st hit (was 3.5, too low to see)
+    public float hiddenGap = 20f;           // where the fox starts and leaves to (when chaseFromStart is off)
     public float closeSpeed = 6f;           // how fast the fox runs up to the chicken
-    public float forgiveTime = 10f;         // safe seconds before the fox gives up
+    public float forgiveTime = 10f;         // safe seconds before the fox drops back
     public float hitCooldown = 1f;          // ignore repeat hits right after a hit
     public float sideSpeed = 8f;            // how fast the fox changes lane
     public bool stopTimeOnCatch = true;     // untick if your GameManager handles game over
@@ -52,6 +55,29 @@ public class FoxChase : MonoBehaviour
         fox.name = "Fox";
         fox.SetActive(false);
         gap = targetGap = hiddenGap;
+    }
+
+    // CHANGED: call this when the game starts or restarts
+    public void ResetChase()
+    {
+        IsCaught = false;
+        Hits = 0;
+        cooldown = 0f;
+        retreating = false;
+        chaseTimer = 0f;
+        if (player == null || fox == null) return;
+
+        if (chaseFromStart)
+        {
+            gap = targetGap = idleGap;
+            fox.transform.position = new Vector3(player.position.x, 0f, player.position.z - gap);
+            fox.SetActive(true);
+        }
+        else
+        {
+            fox.SetActive(false);
+            gap = targetGap = hiddenGap;
+        }
     }
 
     // Call this when the chicken hits an obstacle
@@ -111,14 +137,22 @@ public class FoxChase : MonoBehaviour
         if (!fox.activeSelf) return;
         runTime += Time.deltaTime;
 
-        if (!IsCaught && !retreating)
+        // CHANGED: only count down after a hit. After forgiveTime the fox drops back.
+        if (!IsCaught && !retreating && Hits > 0)
         {
             chaseTimer -= Time.deltaTime;
             if (chaseTimer <= 0f)
             {
-                retreating = true;           // chicken survived, fox gives up
-                targetGap = hiddenGap;
                 Hits = 0;
+                if (chaseFromStart)
+                {
+                    targetGap = idleGap;     // fox stays behind the chicken, but farther
+                }
+                else
+                {
+                    retreating = true;       // fox leaves
+                    targetGap = hiddenGap;
+                }
             }
         }
 

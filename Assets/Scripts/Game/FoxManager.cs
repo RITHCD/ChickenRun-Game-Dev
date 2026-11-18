@@ -3,65 +3,72 @@ using UnityEngine;
 
 public class FoxManager : MonoBehaviour
 {
-    public GameObject fox;             // optional, not needed
-    public float foxAwayTime = 10f;    // safe seconds before the fox goes away
+    public GameObject fox;             // old slot, not used any more (leave empty)
+    public float foxAwayTime = 10f;    // safe seconds before the fox drops back
     public float hitCooldown = 1.2f;   // ignore extra hits right after a hit
     public float lungeTime = 0.7f;     // let the fox catch the chicken before game over
 
     public int Hits { get; private set; }
 
     float foxTimer, nextHitTime;
+    bool ready;
 
-    void Awake()
+    void Start() { Setup(); }
+
+    // CHANGED: runs once. Find the FoxChase in the scene (or make one) and give it our values.
+    void Setup()
     {
-        // create the chasing fox automatically if the scene has none
+        if (ready) return;
+        ready = true;
+
         if (FoxChase.I == null)
         {
             GameObject go = new GameObject("FoxChase");
-            FoxChase fc = go.AddComponent<FoxChase>();
-            if (fc.player == null)
-            {
-                PlayerControl pc = FindFirstObjectByType<PlayerControl>();
-                if (pc != null) fc.player = pc.transform;
-            }
+            go.AddComponent<FoxChase>();
         }
 
-        // keep FoxChase in sync with this manager (one set of values, not two)
-        if (FoxChase.I != null)
+        FoxChase fc = FoxChase.I;
+        if (fc == null) return;
+
+        if (fc.player == null)
         {
-            FoxChase.I.stopTimeOnCatch = false;   // GameManager handles game over
-            FoxChase.I.forgiveTime = foxAwayTime;
-            FoxChase.I.hitCooldown = hitCooldown;
+            PlayerControl pc = FindFirstObjectByType<PlayerControl>();
+            if (pc != null) fc.player = pc.transform;
         }
-    }
 
-    void Start() { Show(false); }
+        fc.stopTimeOnCatch = false;        // GameManager handles game over
+        fc.forgiveTime = foxAwayTime;
+        fc.hitCooldown = hitCooldown;
+    }
 
     void Update()
     {
-        if (GameManager.I == null || !GameManager.I.IsPlaying || Hits == 0) return;
+        if (GameManager.I == null || !GameManager.I.IsPlaying) return;
+        if (Hits == 0 || Hits >= 2) return;
         foxTimer += Time.deltaTime;
-        if (foxTimer > foxAwayTime) { Hits = 0; Show(false); }
+        if (foxTimer > foxAwayTime) Hits = 0;
     }
 
     public void ResetFox()
     {
+        Setup();
         Hits = 0; foxTimer = 0f; nextHitTime = 0f;
-        Show(false);
+        if (FoxChase.I != null) FoxChase.I.ResetChase();   // CHANGED: fox starts running behind the chicken
     }
 
     public void RegisterHit()
     {
+        Setup();
         if (GameManager.I == null || !GameManager.I.IsPlaying) return;
         if (Hits >= 2) return;                      // already caught, waiting for game over
         if (Time.time < nextHitTime) return;
         nextHitTime = Time.time + hitCooldown;
         Hits++; foxTimer = 0f;
+        Debug.Log("Fox hit " + Hits + " of 2");     // CHANGED: so you can see every hit in the Console
 
-        if (FoxChase.I != null) FoxChase.I.Hit();   // fox runs up behind the chicken
+        if (FoxChase.I != null) FoxChase.I.Hit();   // fox runs up close, or catches on the 2nd hit
 
         if (Hits >= 2) StartCoroutine(GameOverAfterLunge());
-        else Show(true);
     }
 
     // wait a moment so the fox lunge is visible, then end the game
@@ -70,6 +77,4 @@ public class FoxManager : MonoBehaviour
         yield return new WaitForSeconds(lungeTime);
         if (GameManager.I != null) GameManager.I.GameOver();
     }
-
-    void Show(bool on) { if (fox != null) fox.SetActive(on); }
 }
