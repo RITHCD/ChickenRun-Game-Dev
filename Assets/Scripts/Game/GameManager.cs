@@ -78,9 +78,5 @@ public class GameManager : MonoBehaviour
         if (OnGameOver != null) OnGameOver();
     }
 
-    void OnGUI()   // temporary test text, delete before submitting
-    {
-        GUI.Label(new Rect(10, 10, 450, 25),
-            "State " + State + "  Speed " + Speed.ToString("0.0") + "  Hits " + Hits + "  Score " + Score + "  Eggs " + Eggs);
-    }
+    // OnGUI removed: replaced by GameHUD screen display
 }
