@@ -365,7 +365,10 @@ public class PlayerControl : MonoBehaviour
         // Move player forward and change lanes
         Vector3 pos = transform.position;
         pos.x = Mathf.Lerp(pos.x, lane * laneDistance, 12f * Time.deltaTime);
-        pos.z += speed * Time.deltaTime;
+
+        // CHANGED (speed): use the speed from GameManager when it exists
+        float s = GameManager.I != null ? GameManager.I.Speed : speed;
+        pos.z += s * Time.deltaTime;
 
         // Apply jumping and gravity
         if (!isGrounded)
