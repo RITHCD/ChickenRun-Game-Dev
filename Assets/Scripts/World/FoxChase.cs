@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 // Subway-Surfers style chaser:
 //   at the start -> the fox runs behind the chicken for a moment, then falls back and leaves
-//   1st obstacle hit -> the fox appears behind the chicken and runs up close
+//   1st obstacle hit -> the fox appears just behind the chicken and runs up close
 //   2nd hit while the fox is close -> the fox catches the chicken, game over
 //   no hit for forgiveTime seconds -> the fox gives up and leaves
 public class FoxChase : MonoBehaviour
@@ -19,14 +19,15 @@ public class FoxChase : MonoBehaviour
     public GameObject foxPrefab;            // optional: your own fox model (should face +Z)
 
     [Header("Start chase (intro)")]
-    public float introTime = 1.5f;          // CHANGED: seconds the fox chases at the start. 0 = no intro
-    public float introGap = 3f;             // CHANGED: distance behind the chicken during the intro
+    public float introTime = 1.5f;          // seconds the fox chases at the start. 0 = no intro
+    public float introGap = 3f;             // distance behind the chicken during the intro
 
     [Header("Chase settings")]
     public float chaseGap = 2.2f;           // distance behind the chicken after the 1st hit
-    public float hiddenGap = 20f;           // where the fox starts and leaves to
-    public float closeSpeed = 6f;           // how fast the fox runs up to the chicken
-    public float retreatSpeed = 10f;        // CHANGED: how fast the fox falls back and leaves
+    public float hiddenGap = 20f;           // where the fox leaves to
+    public float hitSpawnGap = 5f;          // CHANGED (fast): where the fox appears after a hit (just off screen)
+    public float closeSpeed = 18f;          // CHANGED (fast): how fast the fox runs up to the chicken (was 6)
+    public float retreatSpeed = 10f;        // how fast the fox falls back and leaves
     public float forgiveTime = 10f;         // safe seconds before the fox gives up
     public float hitCooldown = 1f;          // ignore repeat hits right after a hit
     public float sideSpeed = 8f;            // how fast the fox changes lane
@@ -60,7 +61,7 @@ public class FoxChase : MonoBehaviour
         gap = targetGap = hiddenGap;
     }
 
-    // CHANGED: called when the game starts. The fox chases for introTime seconds, then leaves.
+    // Called when the game starts. The fox chases for introTime seconds, then leaves.
     public void ResetChase()
     {
         IsCaught = false;
@@ -91,7 +92,7 @@ public class FoxChase : MonoBehaviour
         if (IsCaught || cooldown > 0f || player == null) return;
         cooldown = hitCooldown;
         Hits++;
-        introTimer = 0f;                     // CHANGED: a hit cancels the intro
+        introTimer = 0f;                     // a hit cancels the intro
 
         if (Hits >= 2) { Catch(); return; }
 
@@ -99,7 +100,7 @@ public class FoxChase : MonoBehaviour
         chaseTimer = forgiveTime;
         if (!fox.activeSelf)
         {
-            gap = hiddenGap;
+            gap = hitSpawnGap;               // CHANGED (fast): was hiddenGap (20)
             fox.transform.position = new Vector3(player.position.x, 0f, player.position.z - gap);
             fox.SetActive(true);
         }
@@ -113,7 +114,7 @@ public class FoxChase : MonoBehaviour
         retreating = false;
         if (!fox.activeSelf)
         {
-            gap = hiddenGap;
+            gap = hitSpawnGap;               // CHANGED (fast): was hiddenGap (20)
             fox.transform.position = new Vector3(player.position.x, 0f, player.position.z - gap);
             fox.SetActive(true);
         }
@@ -143,7 +144,7 @@ public class FoxChase : MonoBehaviour
         if (!fox.activeSelf) return;
         runTime += Time.deltaTime;
 
-        // CHANGED: intro over -> the fox falls back and leaves
+        // intro over -> the fox falls back and leaves
         if (introTimer > 0f)
         {
             introTimer -= Time.deltaTime;
@@ -167,7 +168,7 @@ public class FoxChase : MonoBehaviour
         }
 
         float speed = closeSpeed;
-        if (IsCaught) speed = closeSpeed * 2.5f;
+        if (IsCaught) speed = closeSpeed * 2f;      // CHANGED (fast): was * 2.5 (closeSpeed is already fast)
         else if (retreating) speed = retreatSpeed;
         gap = Mathf.MoveTowards(gap, targetGap, speed * Time.deltaTime);
 
